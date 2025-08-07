@@ -10,40 +10,37 @@ def load_data():
 
 df = load_data()
 
-# --- Find dominant MBTI type per country ---
-mbti_columns = df.columns[1:]
-df["Dominant_Type"] = df[mbti_columns].idxmax(axis=1)
-df["Dominant_Value"] = df[mbti_columns].max(axis=1)
-
 # --- Title ---
-st.title("🌍 Countries and Their Dominant MBTI Type")
+st.title("🌐 국가별 MBTI 유형 비율 시각화")
 
-# --- Country filter ---
-selected_country = st.selectbox("Select a country to highlight", ["(All)"] + sorted(df["Country"].tolist()))
+# --- Country selection ---
+country_list = sorted(df["Country"].unique())
+selected_country = st.selectbox("국가를 선택하세요:", country_list)
+
+# --- Filter selected country ---
+country_data = df[df["Country"] == selected_country].iloc[0]
+mbti_types = df.columns[1:]
+mbti_values = country_data[mbti_types]
+
+# --- Create dataframe for plotting ---
+plot_df = pd.DataFrame({
+    "MBTI": mbti_types,
+    "Percentage": mbti_values.values
+}).sort_values(by="Percentage", ascending=False)
 
 # --- Altair Bar Chart ---
-chart_data = df.copy()
-
-highlight = alt.selection_single(fields=["Country"], bind="legend")
-
-base = alt.Chart(chart_data).mark_bar().encode(
-    x=alt.X("Country:N", sort="-y", title="Country"),
-    y=alt.Y("Dominant_Value:Q", title="Dominant MBTI Proportion"),
-    color=alt.Color("Dominant_Type:N", legend=alt.Legend(title="MBTI Type")),
-    tooltip=["Country", "Dominant_Type", "Dominant_Value"]
+chart = alt.Chart(plot_df).mark_bar().encode(
+    x=alt.X("MBTI:N", sort="-y"),
+    y=alt.Y("Percentage:Q", title="비율"),
+    tooltip=["MBTI", "Percentage"]
 ).properties(
-    width=800,
-    height=500
+    title=f"{selected_country}의 MBTI 비율",
+    width=700,
+    height=400
 )
 
-if selected_country != "(All)":
-    chart_data = chart_data[chart_data["Country"] == selected_country]
-    base = base.transform_filter(
-        alt.datum.Country == selected_country
-    )
+st.altair_chart(chart, use_container_width=True)
 
-st.altair_chart(base, use_container_width=True)
-
-# --- Optional: Data Table ---
-with st.expander("📋 Show Data Table"):
-    st.dataframe(df[["Country", "Dominant_Type", "Dominant_Value"]].sort_values(by="Dominant_Value", ascending=False))
+# --- Show data table ---
+with st.expander("📊 데이터 테이블 보기"):
+    st.dataframe(plot_df.reset_index(drop=True))
