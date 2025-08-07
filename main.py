@@ -1,90 +1,49 @@
 import streamlit as st
+import pandas as pd
+import altair as alt
 
-st.set_page_config(page_title="MBTI 추천 앱", page_icon="🧠")
+# --- Load CSV data ---
+@st.cache_data
+def load_data():
+    df = pd.read_csv("countriesMBTI_16types.csv")
+    return df
 
-st.title("🧠 MBTI 기반 직업 & 취미 추천 앱")
-st.write("당신의 MBTI 유형을 선택하면, 어울리는 💼 직업과 🎨 취미를 추천해드려요!")
+df = load_data()
 
-# MBTI 데이터
-mbti_data = {
-    "INTJ": {
-        "직업": ["🔬 전략 컨설턴트", "💻 데이터 과학자", "📈 시스템 분석가"],
-        "취미": ["♟️ 체스", "🧑‍💻 프로그래밍", "📚 독서"]
-    },
-    "INTP": {
-        "직업": ["🧪 연구원", "👨‍💻 개발자", "📊 이론 물리학자"],
-        "취미": ["🧩 퍼즐", "📖 철학 읽기", "🎮 게임"]
-    },
-    "ENTJ": {
-        "직업": ["💼 CEO", "📊 기획 관리자", "🗣️ 경영 컨설턴트"],
-        "취미": ["🏋️ 헬스", "📈 투자 공부", "🧠 전략 게임"]
-    },
-    "ENTP": {
-        "직업": ["🚀 스타트업 창업가", "📢 광고 기획자", "⚖️ 변호사"],
-        "취미": ["🗯️ 토론", "🎲 보드게임", "🧪 아이디어 실험"]
-    },
-    "INFJ": {
-        "직업": ["🧘 심리상담가", "✍️ 작가", "🌱 사회운동가"],
-        "취미": ["📓 일기 쓰기", "🌌 명상", "🎨 예술 감상"]
-    },
-    "INFP": {
-        "직업": ["📝 시인", "🎨 일러스트레이터", "🎭 예술가"],
-        "취미": ["🎼 음악 감상", "✒️ 글쓰기", "🌿 자연 산책"]
-    },
-    "ENFJ": {
-        "직업": ["👩‍🏫 교사", "🫶 NGO 활동가", "🎤 강연자"],
-        "취미": ["👯 봉사 활동", "📖 독서 모임", "🎬 영화 감상"]
-    },
-    "ENFP": {
-        "직업": ["🎨 크리에이티브 디렉터", "🎤 방송인", "🌍 여행가"],
-        "취미": ["✈️ 여행", "🎉 파티 기획", "📸 사진 찍기"]
-    },
-    "ISTJ": {
-        "직업": ["📋 행정 공무원", "📚 회계사", "👨‍⚖️ 판사"],
-        "취미": ["📖 규칙 기반 게임", "🗂️ 정리 정돈", "🧩 퍼즐"]
-    },
-    "ISFJ": {
-        "직업": ["🧑‍⚕️ 간호사", "👩‍🏫 교사", "🧾 사서"],
-        "취미": ["🧶 뜨개질", "🍰 베이킹", "📷 사진 정리"]
-    },
-    "ESTJ": {
-        "직업": ["👮 경찰", "🏢 관리자", "⚖️ 검사"],
-        "취미": ["🏃 운동", "🗃️ 계획 세우기", "💬 발표"]
-    },
-    "ESFJ": {
-        "직업": ["💉 간호사", "🎓 교육자", "🧑‍🍳 요리사"],
-        "취미": ["🍽️ 요리", "📞 친구와 통화", "🧼 집 꾸미기"]
-    },
-    "ISTP": {
-        "직업": ["🔧 기술자", "🛠️ 정비사", "🚓 경찰관"],
-        "취미": ["🧰 DIY", "🏍️ 오토바이 타기", "🕹️ 게임"]
-    },
-    "ISFP": {
-        "직업": ["🎨 디자이너", "🎭 예술가", "🐾 애완동물 전문가"],
-        "취미": ["🎨 그림 그리기", "🎧 음악 듣기", "🌼 정원 가꾸기"]
-    },
-    "ESTP": {
-        "직업": ["💼 세일즈 전문가", "🚒 소방관", "🕵️ 보안 전문가"],
-        "취미": ["🏄 익스트림 스포츠", "🎮 e스포츠", "🎲 도전 게임"]
-    },
-    "ESFP": {
-        "직업": ["🎤 연예인", "🪩 이벤트 플래너", "👗 패션 디자이너"],
-        "취미": ["🎶 노래", "🕺 춤", "📱 SNS 콘텐츠 제작"]
-    }
-}
+# --- Find dominant MBTI type per country ---
+mbti_columns = df.columns[1:]
+df["Dominant_Type"] = df[mbti_columns].idxmax(axis=1)
+df["Dominant_Value"] = df[mbti_columns].max(axis=1)
 
-mbti_types = list(mbti_data.keys())
-selected_mbti = st.selectbox("👉 당신의 MBTI는?", mbti_types)
+# --- Title ---
+st.title("🌍 Countries and Their Dominant MBTI Type")
 
-if selected_mbti:
-    st.markdown(f"## 🎯 {selected_mbti} 유형 추천 결과")
+# --- Country filter ---
+selected_country = st.selectbox("Select a country to highlight", ["(All)"] + sorted(df["Country"].tolist()))
 
-    st.markdown("### 💼 어울리는 직업")
-    for job in mbti_data[selected_mbti]["직업"]:
-        st.markdown(f"- {job}")
+# --- Altair Bar Chart ---
+chart_data = df.copy()
 
-    st.markdown("### 🎨 추천 취미")
-    for hobby in mbti_data[selected_mbti]["취미"]:
-        st.markdown(f"- {hobby}")
+highlight = alt.selection_single(fields=["Country"], bind="legend")
 
-    st.success("✨ 새로운 도전을 시작해보세요!")
+base = alt.Chart(chart_data).mark_bar().encode(
+    x=alt.X("Country:N", sort="-y", title="Country"),
+    y=alt.Y("Dominant_Value:Q", title="Dominant MBTI Proportion"),
+    color=alt.Color("Dominant_Type:N", legend=alt.Legend(title="MBTI Type")),
+    tooltip=["Country", "Dominant_Type", "Dominant_Value"]
+).properties(
+    width=800,
+    height=500
+)
+
+if selected_country != "(All)":
+    chart_data = chart_data[chart_data["Country"] == selected_country]
+    base = base.transform_filter(
+        alt.datum.Country == selected_country
+    )
+
+st.altair_chart(base, use_container_width=True)
+
+# --- Optional: Data Table ---
+with st.expander("📋 Show Data Table"):
+    st.dataframe(df[["Country", "Dominant_Type", "Dominant_Value"]].sort_values(by="Dominant_Value", ascending=False))
