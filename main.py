@@ -69,32 +69,23 @@ with tab1:
         }
         return groups
 
+    # 그룹 비율 계산
     grouped = group_mbti(country_data)
 
-    # 시각화용 데이터프레임 생성
-    grouped_df = pd.DataFrame({
-        "Dimension": ["I/E", "S/N", "T/F", "J/P"],
-        "Type1": ["I", "S", "T", "J"],
-        "Type2": ["E", "N", "F", "P"],
-        "Value1": [grouped["I"], grouped["S"], grouped["T"], grouped["J"]],
-        "Value2": [grouped["E"], grouped["N"], grouped["F"], grouped["P"]],
+    # 그룹 시각화용 데이터프레임 생성
+    group_df = pd.DataFrame({
+        "Dimension": ["I/E", "I/E", "S/N", "S/N", "T/F", "T/F", "J/P", "J/P"],
+        "Type": ["I", "E", "S", "N", "T", "F", "J", "P"],
+        "Percentage": [
+            grouped["I"], grouped["E"],
+            grouped["S"], grouped["N"],
+            grouped["T"], grouped["F"],
+            grouped["J"], grouped["P"]
+        ]
     })
 
-    # Melt for stacked bar chart
-    melt_df = pd.melt(grouped_df,
-                      id_vars=["Dimension"],
-                      value_vars=["Value1", "Value2"],
-                      var_name="Group",
-                      value_name="Percentage")
-
-    # Mapping label back
-    melt_df["Type"] = melt_df.apply(
-        lambda row: grouped_df.loc[row.name // 2, "Type1"] if row["Group"] == "Value1"
-        else grouped_df.loc[row.name // 2, "Type2"],
-        axis=1
-    )
-
-    chart_group = alt.Chart(melt_df).mark_bar().encode(
+    # Altair stacked bar chart
+    chart_group = alt.Chart(group_df).mark_bar().encode(
         x=alt.X("Dimension:N", title="MBTI 축"),
         y=alt.Y("Percentage:Q", stack="normalize", title="비율 (%)"),
         color=alt.Color("Type:N", title="MBTI"),
